@@ -1,0 +1,4 @@
+# Local module for the plugin's own QML files.
+singleton Strings Strings.qml
+Logo Logo.qml
+Widget Widget.qml

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "diogocezar.prisma",
+  "name": "Prisma",
+  "version": "1.0.0",
+  "author": "diogocezar",
+  "license": "MIT",
+  "description": "One place for all your RGB lighting on Omarchy, powered by OpenRGB. Paint every device at once or each one on its own, follow your theme's colors, and rename what it finds.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "src/Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Prisma",
+    "description": "RGB lighting for every device, following your theme",
+    "category": "Hardware",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "enabled": true,
+      "mode": "all",
+      "color": "theme:accent",
+      "devices": {},
+      "argbLeds": 24,
+      "language": "auto"
+    },
+    "schema": [
+      {"key": "enabled", "type": "boolean", "label": "Lighting on"},
+      {"key": "mode", "type": "enum", "options": ["all", "each"],
+       "defaultValue": "all", "label": "Colors (all = one for every device, each = per device)"},
+      {"key": "argbLeds", "type": "integer", "min": 0, "max": 300,
+       "label": "LEDs per empty ARGB header (0 = leave headers alone)"},
+      {"key": "language", "type": "enum", "options": ["auto", "en", "pt", "es", "fr", "de"],
+       "defaultValue": "auto", "label": "Language (auto = system locale)"}
+    ]
+  }
+}
