@@ -1,17 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Additive RGB: each overlap is the sum of its lights. -->
-  <defs>
-    <circle id="r" cx="50" cy="36" r="24"/>
-    <circle id="g" cx="36" cy="60" r="24"/>
-    <circle id="b" cx="64" cy="60" r="24"/>
-    <clipPath id="cr"><use href="#r"/></clipPath>
-    <clipPath id="cg"><use href="#g"/></clipPath>
-    <clipPath id="cb"><use href="#b"/></clipPath>
-  </defs>
-  <use href="#r" fill="#FF2E4D"/>
-  <use href="#g" fill="#2EE66B"/>
-  <use href="#b" fill="#2E6BFF"/>
-  <g clip-path="url(#cr)"><use href="#g" fill="#FFE14D"/><use href="#b" fill="#E44DFF"/></g>
-  <g clip-path="url(#cg)"><use href="#b" fill="#3DE8FF"/></g>
-  <g clip-path="url(#cr)"><g clip-path="url(#cg)"><use href="#b" fill="#FFFFFF"/></g></g>
+  <!-- Additive RGB: each overlap is the sum of its lights. The overlaps are
+       plain arc paths (no clipPath) so any SVG renderer, Qt's included, draws them. -->
+  <circle cx="50" cy="36" r="24" fill="#FF2E4D"/>
+  <circle cx="36" cy="60" r="24" fill="#2EE66B"/>
+  <circle cx="64" cy="60" r="24" fill="#2E6BFF"/>
+  <path d="M59.90 57.86A24 24 0 0 1 26.10 38.14A24 24 0 0 1 59.90 57.86Z" fill="#FFE14D"/>
+  <path d="M73.90 38.14A24 24 0 0 1 40.10 57.86A24 24 0 0 1 73.90 38.14Z" fill="#E44DFF"/>
+  <path d="M50.00 40.51A24 24 0 0 1 50.00 79.49A24 24 0 0 1 50.00 40.51Z" fill="#3DE8FF"/>
+  <path d="M59.90 57.86A24 24 0 0 1 40.10 57.86A24 24 0 0 1 50.00 40.51A24 24 0 0 1 59.90 57.86Z" fill="#FFFFFF"/>
 </svg>

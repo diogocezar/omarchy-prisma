@@ -328,7 +328,7 @@ Panel {
                             Logo {
                                 size: Style.font.display * 1.25
                                 weight: 6
-                                colors: root.lightsOn ? ["#FF3B3B", "#3BFF6B", "#3B7BFF"] : []
+                                lit: root.lightsOn
                                 color: root.foreground
                             }
                         }
