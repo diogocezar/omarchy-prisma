@@ -1,0 +1,55 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+/* Source of assets/banner.png and preview.png; render with render.sh.
+   Everything is sized in --u (1/64 of the height) so both sizes share one layout.
+   The panel stays whole and inside the middle 76% of the height, which is what
+   the marketplace card keeps when it crops the preview. */
+:root{--bg:#0b0a12;--text:#f1f0f8;--muted:#a6a4bd}
+*{margin:0;box-sizing:border-box}
+html,body{width:var(--w);height:var(--h);overflow:hidden;background:var(--bg)}
+body{font-family:"Inter Variable",Inter,sans-serif;color:var(--text);position:relative}
+.glow{position:absolute;border-radius:50%;filter:blur(calc(var(--u)*9))}
+.grid{position:absolute;inset:0;background:
+ linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px) 0 0/calc(var(--u)*3) calc(var(--u)*3),
+ linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px) 0 0/calc(var(--u)*3) calc(var(--u)*3);
+ mask-image:radial-gradient(ellipse at 25% 50%,#000 15%,transparent 70%)}
+.left{position:absolute;left:calc(var(--u)*5.5);top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;width:calc(var(--u)*50)}
+.logo{display:flex;align-items:center;gap:calc(var(--u)*1.6)}
+.logo img{width:calc(var(--u)*8);height:calc(var(--u)*8);filter:drop-shadow(0 calc(var(--u)*.6) calc(var(--u)*2) rgba(0,0,0,.6))}
+h1{font-family:"JetBrains Mono";font-weight:800;font-size:calc(var(--u)*6.6);letter-spacing:-.045em;line-height:1}
+.kicker{font-family:"JetBrains Mono";font-size:calc(var(--u)*1.05);font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:calc(var(--u)*.5)}
+.tag{font-size:calc(var(--u)*2.7);font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-top:calc(var(--u)*2.6)}
+.rgb{background:linear-gradient(90deg,#ff2e4d,#ffb23d,#ffe14d,#2ee66b,#3de8ff,#2e6bff,#e44dff);-webkit-background-clip:text;color:transparent}
+.sub{color:var(--muted);font-size:calc(var(--u)*1.45);margin-top:calc(var(--u)*1.4);line-height:1.5;max-width:calc(var(--u)*44)}
+.sub b{color:var(--text);font-weight:600}
+.devices{display:flex;flex-wrap:wrap;gap:calc(var(--u)*.7);margin-top:calc(var(--u)*2.4);max-width:calc(var(--u)*46)}
+.dev{font-family:"JetBrains Mono";font-size:calc(var(--u)*1.05);font-weight:600;padding:calc(var(--u)*.5) calc(var(--u)*.95);border-radius:calc(var(--u)*.5);color:#e9e8f3;display:flex;align-items:center;gap:calc(var(--u)*.6);
+ background:color-mix(in srgb,var(--c) 12%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);box-shadow:0 0 calc(var(--u)*1.6) color-mix(in srgb,var(--c) 30%,transparent)}
+.dev i{width:calc(var(--u)*.75);height:calc(var(--u)*.75);border-radius:50%;background:var(--c);box-shadow:0 0 calc(var(--u)*.8) var(--c)}
+.shot{position:absolute;right:calc(var(--u)*5.5);top:12%;height:76%;border-radius:calc(var(--u)*.4);
+ box-shadow:0 calc(var(--u)*2.5) calc(var(--u)*6) rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.06)}
+.shot img{display:block;height:100%;border-radius:inherit}
+</style></head><body>
+<div class="glow" style="width:34%;height:60%;right:18%;top:-8%;background:#ff00ff;opacity:.38"></div>
+<div class="glow" style="width:30%;height:55%;right:-6%;top:6%;background:#0080ff;opacity:.5"></div>
+<div class="glow" style="width:30%;height:55%;right:22%;bottom:-14%;background:#00ff80;opacity:.28"></div>
+<div class="glow" style="width:28%;height:50%;right:-4%;bottom:-18%;background:#ff4000;opacity:.4"></div>
+<div class="grid"></div>
+<div class="left">
+  <div class="logo"><img src="../prisma-app-icon.svg"><div><h1>Prisma</h1><div class="kicker">for Omarchy · powered by OpenRGB</div></div></div>
+  <div class="tag">All your <span class="rgb">RGB lighting</span>,<br>right from your Omarchy bar.</div>
+  <div class="sub">One icon controls the lights of your whole PC: <b>one color for everything, a color per device</b>, or your <b>theme's colors</b>, which follow you when you switch themes.</div>
+  <div class="devices">
+    <span class="dev" style="--c:#ff00ff"><i></i>RAM</span>
+    <span class="dev" style="--c:#00ff80"><i></i>Graphics card</span>
+    <span class="dev" style="--c:#0080ff"><i></i>Motherboard</span>
+    <span class="dev" style="--c:#ff2e4d"><i></i>AIO &amp; fans</span>
+    <span class="dev" style="--c:#ff4000"><i></i>Keyboard</span>
+    <span class="dev" style="--c:#ffe14d"><i></i>Mouse</span>
+  </div>
+</div>
+<div class="shot"><img src="../../screenshots/per-device.png" alt=""></div>
+<script>
+const p=new URLSearchParams(location.search), w=+p.get('w'), h=+p.get('h');
+const r=document.documentElement.style;
+r.setProperty('--w',w+'px'); r.setProperty('--h',h+'px'); r.setProperty('--u',(h/64)+'px');
+</script></body></html>
