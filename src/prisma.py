@@ -166,9 +166,23 @@ def split(text):
         return text.split()
 
 
+_list_flag = None
+
+
+def list_flag():
+    """OpenRGB 1.1 made --list-devices names only; the old detailed output
+    (Type, Modes, Zones, LEDs) moved to --list-detailed."""
+    global _list_flag
+    if _list_flag is None:
+        help_text = subprocess.run(["openrgb", "--help"], capture_output=True,
+                                   text=True, timeout=30).stdout
+        _list_flag = "--list-detailed" if "--list-detailed" in help_text else "--list-devices"
+    return _list_flag
+
+
 def read_devices():
     """[{key, name, type, modes, argb}] as the server sees them right now."""
-    out = subprocess.run(["openrgb", "--list-devices"],
+    out = subprocess.run(["openrgb", list_flag()],
                          capture_output=True, text=True, timeout=180).stdout
     devs, cur, seen = [], None, {}
     for line in out.splitlines():
