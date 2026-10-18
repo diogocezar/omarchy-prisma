@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "diogocezar.prisma",
   "name": "Prisma",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "diogocezar",
   "license": "MIT",
   "description": "Control the RGB lighting of your whole PC (motherboard, RAM, graphics card, fans, keyboard, mouse) from one icon in the Omarchy bar: one color for everything, a color per device, or your theme's colors. Powered by OpenRGB.",

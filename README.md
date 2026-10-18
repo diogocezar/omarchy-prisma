@@ -87,7 +87,7 @@ Then unplug and plug back any USB device (keyboard, mouse, fan hub).
 ### 3. Check that OpenRGB sees your hardware
 
 ```bash
-openrgb --list-devices
+openrgb --list-detailed    # OpenRGB 1.0: openrgb --list-devices
 ```
 
 You should see your devices listed with their modes. **If a device is missing
