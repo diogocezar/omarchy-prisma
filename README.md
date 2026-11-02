@@ -191,7 +191,10 @@ long-running OpenRGB server, picking the first of:
 
 1. **A server already running**: the OpenRGB app with its SDK server on, or
    the system service shipped with the package
-   (`sudo systemctl enable --now openrgb`). Prisma uses it as is.
+   (`sudo systemctl enable --now openrgb`). Prisma uses it as is, but only
+   if it belongs to you or to root: the SDK port (6742) is open to any local
+   account, so if another user holds it, Prisma refuses to connect instead of
+   trusting whatever answers there.
 2. **A user unit named `openrgb.service`**, if you have one. Prisma starts it.
 3. **Otherwise, its own server**, started as the transient user unit
    `prisma-openrgb`. Nothing is installed; it lasts until you log out, and

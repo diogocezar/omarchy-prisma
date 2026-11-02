@@ -14,9 +14,10 @@ repeats, so two identical sticks of RAM can still be told apart.
 Hardware quirks handled here, all learned the hard way:
 
 1. Some controllers (ASUS Aura) revert as soon as the process talking to them
-   exits, so everything goes through a long-lived OpenRGB server. Whatever
-   already listens on the SDK port is used as is (the OpenRGB GUI, or the
-   packaged system `openrgb.service`). Otherwise we start the user unit
+   exits, so everything goes through a long-lived OpenRGB server. A server
+   already on the SDK port is used as is (the OpenRGB GUI, or the packaged
+   system `openrgb.service`), as long as it belongs to us or to root; another
+   user's listener is refused. Otherwise we start the user unit
    `openrgb.service` if there is one, or else our own transient unit
    `prisma-openrgb` through systemd-run, so nothing needs installing.
 
@@ -34,6 +35,13 @@ Hardware quirks handled here, all learned the hard way:
 4. The server detects devices once, when it starts. A wireless mouse that was
    asleep then is missing until the server restarts: that is `rescan`.
 
+5. The server opens its port seconds before detection ends, and libusb
+   devices (HyperX QuadCast S) come last. At boot systemd starts the server
+   before the shell, so "the port was already open" doesn't mean detection is
+   over. A server younger than WARMUP seconds counts as cold, and a cold
+   server is ready when its log says "Detection completed". A device that
+   OpenRGB takes over but never gets a color stays dark.
+
 Exit codes: 1 bad input or OpenRGB error, 2 openrgb missing, 3 server down,
 4 no devices.
 """
@@ -44,7 +52,6 @@ import pathlib
 import re
 import shlex
 import shutil
-import socket
 import subprocess
 import sys
 import time
@@ -65,10 +72,13 @@ OFF = ["Off", "Disabled"]
 PORT = 6742
 USER_UNIT = "openrgb.service"
 OWN_UNIT = "prisma-openrgb"
+# a server younger than this may still be detecting devices
+WARMUP = 90
 
 HOME = pathlib.Path.home()
 THEME = HOME / ".local/state/omarchy/current/theme/colors.toml"
 CACHE = pathlib.Path(os.environ.get("XDG_CACHE_HOME", HOME / ".cache")) / "prisma"
+OPENRGB_LOGS = pathlib.Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "OpenRGB/logs"
 
 
 def die(message, code=1):
@@ -86,10 +96,45 @@ def theme_accent():
     return m.group(1).upper()
 
 
+def listener_owners():
+    """uids of every socket listening on PORT, in any address family.
+
+    /proc/net/tcp{,6} shows the owner of every socket, other users' included,
+    so nothing has to connect to find out who is on the other end."""
+    owners = set()
+    for table in ("/proc/net/tcp", "/proc/net/tcp6"):
+        try:
+            rows = pathlib.Path(table).read_text().splitlines()[1:]
+        except OSError:
+            continue
+        for row in rows:
+            cols = row.split()
+            if len(cols) > 7 and cols[3] == "0A" and int(cols[1].rsplit(":", 1)[1], 16) == PORT:
+                owners.add(int(cols[7]))
+    return owners
+
+
 def port_open():
-    with socket.socket() as sock:
-        sock.settimeout(0.5)
-        return sock.connect_ex(("127.0.0.1", PORT)) == 0
+    """True when a server we trust listens on PORT; dies on anyone else's.
+
+    The port is unprivileged, so another local account could bind it first and
+    pose as the OpenRGB server to feed our client whatever it likes. Only a
+    listener owned by us or by root (the packaged system openrgb.service) is
+    used. While ours holds the port nobody else can bind it (SO_REUSEPORT only
+    pairs sockets of the same uid), and every openrgb call checks again."""
+    owners = listener_owners()
+    foreign = owners - {os.getuid(), 0}
+    if foreign:
+        die(f"port {PORT} is held by another user (uid {', '.join(map(str, sorted(foreign)))}); "
+            "refusing to talk to a server that isn't yours", 3)
+    return bool(owners)
+
+
+def openrgb(args, timeout=180):
+    """Run an OpenRGB client against the server, once it is known to be ours."""
+    if not port_open():
+        die("the OpenRGB server went away", 3)
+    return subprocess.run(["openrgb"] + args, capture_output=True, text=True, timeout=timeout)
 
 
 def user_unit_exists(unit):
@@ -106,6 +151,55 @@ def active_unit():
         if r.stdout.strip() == "active":
             return unit
     return ""
+
+
+def server_pid():
+    """PID of the OpenRGB server on our port, or None when we can't tell."""
+    unit = active_unit()
+    if unit:
+        pid = subprocess.run(["systemctl", "--user", "show", "-p", "MainPID", "--value", unit],
+                             capture_output=True, text=True).stdout.strip()
+        if pid.isdigit() and pid != "0":
+            return int(pid)
+    r = subprocess.run(["pgrep", "-o", "-f", r"openrgb.*--server"],
+                       capture_output=True, text=True)
+    first = r.stdout.split()
+    return int(first[0]) if first and first[0].isdigit() else None
+
+
+def server_age():
+    """Seconds since the server process started, or None."""
+    pid = server_pid()
+    if pid is None:
+        return None
+    r = subprocess.run(["ps", "-o", "etimes=", "-p", str(pid)], capture_output=True, text=True)
+    age = r.stdout.strip()
+    return int(age) if age.isdigit() else None
+
+
+def detection_done():
+    """True/False from the server's own log, None when there's no such log.
+
+    Every openrgb process writes OpenRGB_YYYYMMDD_HHMMSS.log, clients included,
+    so the server's log is the one named after the second the server started."""
+    age = server_age()
+    if age is None or not OPENRGB_LOGS.is_dir():
+        return None
+    started = time.time() - age
+    for log in OPENRGB_LOGS.glob("OpenRGB_*.log"):
+        m = re.fullmatch(r"OpenRGB_(\d{8}_\d{6})\.log", log.name)
+        if not m:
+            continue
+        try:
+            stamp = time.mktime(time.strptime(m.group(1), "%Y%m%d_%H%M%S"))
+        except ValueError:
+            continue
+        if abs(stamp - started) <= 3:
+            try:
+                return "Detection completed" in log.read_text(errors="replace")
+            except OSError:
+                return None
+    return None
 
 
 def server_id():
@@ -137,7 +231,8 @@ def ensure_server():
         die("openrgb is not installed (sudo pacman -S openrgb)", 2)
     for attempt in range(40):
         if port_open():
-            return attempt > 0
+            age = server_age()
+            return attempt > 0 or (age is not None and age < WARMUP)
         if attempt == 0:
             start_server()
         time.sleep(1)
@@ -182,8 +277,7 @@ def list_flag():
 
 def read_devices():
     """[{key, name, type, modes, argb}] as the server sees them right now."""
-    out = subprocess.run(["openrgb", list_flag()],
-                         capture_output=True, text=True, timeout=180).stdout
+    out = openrgb([list_flag()]).stdout
     devs, cur, seen = [], None, {}
     for line in out.splitlines():
         head = re.match(r"^(\d+): (.+)$", line)
@@ -214,11 +308,18 @@ def read_devices():
 
 def settled_devices(cold):
     """The server opens its port before detection ends, so right after a cold
-    start a listing only has some devices. Then we wait for the list to stop
+    start a listing only has some devices. Then we wait for the server's log
+    to report the end of detection, or, without a log, for the list to stop
     growing; with a warm server one read is enough (the usual case)."""
-    devs = read_devices()
     if not cold:
-        return devs
+        return read_devices()
+    if detection_done() is not None:
+        for _ in range(120):                 # 60 s ceiling
+            if detection_done():
+                break
+            time.sleep(0.5)
+        return read_devices()
+    devs = read_devices()
     steady = 0
     for _ in range(60):                      # 30 s ceiling
         time.sleep(0.5)
@@ -295,7 +396,7 @@ def apply(looks, force=False):
     print("\n".join(lines))
     if not args:
         return
-    r = subprocess.run(["openrgb"] + args, capture_output=True, text=True, timeout=180)
+    r = openrgb(args)
     errors = [line for line in (r.stdout + r.stderr).splitlines()
               if re.search(r"error|wrong|invalid|fail", line, re.I)
               and "Connection attempt failed" not in line]
